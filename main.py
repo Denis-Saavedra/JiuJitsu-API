@@ -13,28 +13,42 @@ app = FastAPI()
 def read_root():
     return {"message": "API de Aulas de Jiu-Jitsu rodando!"}
 
-# 🔸 Cadastro de novo usuário (nickname + email + senha com hash)
+# 🔸 Modelo Pydantic para criar usuário
+class UsuarioCreate(BaseModel):
+    nickname: str
+    senha: str
+    idade: int
+    peso: float
+    faixa: str
+    graus: int
+
+# 🔸 Cadastro de novo usuário
 @app.post("/usuarios")
-def criar_usuario(
-    nickname: str = Body(...),
-    email: str = Body(...),
-    senha: str = Body(...)
-):
+def criar_usuario(usuario: UsuarioCreate):
     try:
-        senha_hash = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        # Verificar se o nickname já está em uso
+        existentes = db.collection("usuarios").where("nickname", "==", usuario.nickname).stream()
+        if any(existentes):
+            raise HTTPException(status_code=400, detail="Nickname já está em uso")
+
+        senha_hash = bcrypt.hashpw(usuario.senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         uid = str(uuid4())
 
         doc_ref = db.collection("usuarios").document(uid)
         doc_ref.set({
             "uid": uid,
-            "nickname": nickname,
-            "email": email,
+            "nickname": usuario.nickname,
             "senha_hash": senha_hash,
-            "faixa": "Branca",
-            "graus": 0
+            "idade": usuario.idade,
+            "peso": usuario.peso,
+            "faixa": usuario.faixa,
+            "graus": usuario.graus,
+            "admin": False
         })
 
         return {"message": "Usuário criado com sucesso", "uid": uid}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -65,7 +79,7 @@ def login_usuario(credenciais: Credenciais):
         return {
             "uid": usuario_data["uid"],
             "nickname": usuario_data["nickname"],
-            "email": usuario_data["email"]
+            "admin": usuario_data.get("admin", False)
         }
 
     except HTTPException:
@@ -122,18 +136,22 @@ def atualizar_graduacao(uid: str, faixa: str = Body(..., embed=True)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# 🔸 Obter dados do usuário (incluindo idade/peso/graus)
 @app.get("/usuarios/{uid}")
 def obter_usuario(uid: str):
     try:
         doc = db.collection("usuarios").document(uid).get()
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Usuário não encontrado")
-        
+
         data = doc.to_dict()
         return {
             "nickname": data.get("nickname"),
             "faixa": data.get("faixa", ""),
-            "graus": data.get("graus", 0)
+            "graus": data.get("graus", 0),
+            "idade": data.get("idade", 0),
+            "peso": data.get("peso", 0.0),
+            "admin": data.get("admin", False)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
