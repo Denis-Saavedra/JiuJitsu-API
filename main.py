@@ -30,11 +30,14 @@ def criar_usuario(
             "nickname": nickname,
             "email": email,
             "senha_hash": senha_hash,
+            "faixa": "branca",     # ✅ novo atributo
+            "graus": 0             # ✅ novo atributo
         })
 
         return {"message": "Usuário criado com sucesso", "uid": uid}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # 🔸 Login por nickname e senha
 class Credenciais(BaseModel):
