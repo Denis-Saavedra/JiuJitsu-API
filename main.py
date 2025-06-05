@@ -30,8 +30,8 @@ def criar_usuario(
             "nickname": nickname,
             "email": email,
             "senha_hash": senha_hash,
-            "faixa": "branca",     # ✅ novo atributo
-            "graus": 0             # ✅ novo atributo
+            "faixa": "Branca",
+            "graus": 0
         })
 
         return {"message": "Usuário criado com sucesso", "uid": uid}
@@ -119,5 +119,21 @@ def atualizar_graduacao(uid: str, faixa: str = Body(..., embed=True)):
     try:
         db.collection("usuarios").document(uid).update({"faixaEsperada": faixa})
         return {"message": "Faixa esperada atualizada com sucesso"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/usuarios/{uid}")
+def obter_usuario(uid: str):
+    try:
+        doc = db.collection("usuarios").document(uid).get()
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        
+        data = doc.to_dict()
+        return {
+            "nickname": data.get("nickname"),
+            "faixa": data.get("faixa", ""),
+            "graus": data.get("graus", 0)
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
