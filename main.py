@@ -17,7 +17,7 @@ def read_root():
 class UsuarioCreate(BaseModel):
     nickname: str
     senha: str
-    idade: int
+    data_nascimento: str  # formato: YYYY-MM-DD
     peso: float
     faixa: str
     graus: int
@@ -39,7 +39,7 @@ def criar_usuario(usuario: UsuarioCreate):
             "uid": uid,
             "nickname": usuario.nickname,
             "senha_hash": senha_hash,
-            "idade": usuario.idade,
+            "data_nascimento": usuario.data_nascimento,
             "peso": usuario.peso,
             "faixa": usuario.faixa,
             "graus": usuario.graus,
@@ -147,10 +147,10 @@ def obter_usuario(uid: str):
         data = doc.to_dict()
         return {
             "nickname": data.get("nickname"),
+            "data_nascimento": data.get("data_nascimento"),
+            "peso": data.get("peso", 0.0),
             "faixa": data.get("faixa", ""),
             "graus": data.get("graus", 0),
-            "idade": data.get("idade", 0),
-            "peso": data.get("peso", 0.0),
             "admin": data.get("admin", False)
         }
     except Exception as e:
