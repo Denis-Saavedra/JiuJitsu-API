@@ -161,3 +161,4 @@ cython_debug/
 
 firebase_credentials.json
 node_modules/
+assets/usuarios
